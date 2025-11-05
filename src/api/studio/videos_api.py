@@ -14,7 +14,7 @@ from src.schemas.videos import (
 )
 from src.services import video_service
 from src.services.authentication import get_authenticated_user
-from src.services.s3_service import s3_service
+from src.services import s3_service
 
 video_routes = APIRouter(prefix="/videos", tags=["Videos"])
 
@@ -37,7 +37,7 @@ async def get_presigned_upload_url(
 	content_type: str = Query(default="video/mp4", description="MIME type"),
 ) -> PresignedUrlResponse:
 	"""Get a presigned URL for uploading a video to S3."""
-	result = s3_service.generate_presigned_upload_url(
+	result = await s3_service.generate_presigned_upload_url(
 		file_extension=file_extension, content_type=content_type
 	)
 
@@ -150,7 +150,7 @@ async def mark_video_uploaded(
 ) -> VideoResponse:
 	"""Mark video as uploaded and set video URL."""
 	# Generate the video URL (presigned or public URL)
-	video_url = s3_service.generate_presigned_download_url(video_key)
+	video_url = await s3_service.generate_presigned_download_url(video_key)
 
 	if not video_url:
 		raise HTTPException(
@@ -189,7 +189,7 @@ async def delete_video(
 
 	# Delete from S3 if video_key exists
 	if video.video_key:
-		s3_service.delete_video(video.video_key)
+		await s3_service.delete_video(video.video_key)
 
 	# Delete from database
 	success = await video_service.delete_video(video_id, user.id, db_session)
