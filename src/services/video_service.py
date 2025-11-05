@@ -189,3 +189,69 @@ async def increment_views(
 	await db_session.refresh(video)
 
 	return video
+
+
+async def update_raw_video(
+	video_id: int,
+	user_id: int,
+	raw_video_url: str,
+	raw_video_key: str,
+	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> Optional[Video]:
+	"""Update raw video URL and set processing status to PENDING."""
+	from src.models.videos import VideoProcessingStatus
+
+	video = await get_video_by_user(video_id, user_id, db_session)
+	if not video:
+		return None
+
+	video.raw_video_url = raw_video_url
+	video.raw_video_key = raw_video_key
+	video.processing_status = VideoProcessingStatus.PENDING.value
+	video.updated_at = datetime.now()
+
+	db_session.add(video)
+	await db_session.commit()
+	await db_session.refresh(video)
+
+	logger.info(f"Updated raw video URL for video {video_id}")
+	return video
+
+
+async def update_processing_status(
+	video_id: int,
+	status: str,
+	db_session: AsyncSession,
+	processed_video_url: Optional[str] = None,
+	available_qualities: Optional[dict] = None,
+	error: Optional[str] = None,
+	duration: Optional[int] = None,
+) -> Optional[Video]:
+	"""Update video processing status (called by webhook)."""
+	video = await get_video(video_id, db_session)
+	if not video:
+		logger.error(f"Video {video_id} not found for processing status update")
+		return None
+
+	video.processing_status = status
+	video.updated_at = datetime.now()
+
+	if processed_video_url:
+		video.processed_video_url = processed_video_url
+		video.video_url = processed_video_url  # Set main video_url to processed URL
+
+	if available_qualities:
+		video.available_qualities = available_qualities
+
+	if error:
+		video.processing_error = error
+
+	if duration is not None:
+		video.duration = duration
+
+	db_session.add(video)
+	await db_session.commit()
+	await db_session.refresh(video)
+
+	logger.info(f"Updated processing status for video {video_id} to {status}")
+	return video

@@ -35,6 +35,19 @@ class Settings(BaseSettings):
 		default=3600, description="Presigned URL expiration time in seconds"
 	)
 
+	# Video processing (go-api)
+	GO_API_BASE_URL: str = Field(
+		default="http://localhost:8080", description="Base URL for go-api video processing service"
+	)
+	GO_API_TIMEOUT: int = Field(default=30, description="Timeout for go-api requests in seconds")
+	VIDEO_PROCESSING_WEBHOOK_SECRET: str = Field(
+		default="",
+		description="Shared secret for video processing webhooks (optional)",
+	)
+	VIDEO_PROCESSING_QUALITIES: list[str] = Field(
+		default=["360p", "480p", "720p", "1080p"], description="Default video quality levels"
+	)
+
 	class Config:
 		# load defaults from a .env file in project root, if present
 		env_file = ".env"

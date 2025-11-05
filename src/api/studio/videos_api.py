@@ -1,14 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.core.logger import logger
 from src.db import get_async_session
 from src.models.users import User
 from src.schemas.videos import (
 	PresignedUrlResponse,
 	VideoCreateReq,
 	VideoListResponse,
+	VideoProcessingWebhookReq,
 	VideoResponse,
 	VideoUpdateReq,
 )
@@ -148,18 +150,29 @@ async def mark_video_uploaded(
 	user: Annotated[User, Depends(get_authenticated_user)] = None,
 	db_session: Annotated[AsyncSession, Depends(get_async_session)] = None,
 ) -> VideoResponse:
-	"""Mark video as uploaded and set video URL."""
-	# Generate the video URL (presigned or public URL)
-	video_url = await s3_service.generate_presigned_download_url(video_key)
+	"""
+	Mark raw video as uploaded and trigger HLS conversion.
 
-	if not video_url:
+	This endpoint:
+	1. Generates presigned URL for the raw video
+	2. Saves raw video URL to database
+	3. Triggers go-api to convert video to HLS format
+	"""
+	from src.models.videos import VideoProcessingStatus
+	from src.services import video_processing_service
+
+	# Generate the raw video URL
+	raw_video_url = await s3_service.generate_presigned_download_url(video_key)
+
+	if not raw_video_url:
 		raise HTTPException(
 			status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
 			detail="Failed to generate video URL",
 		)
 
-	video = await video_service.update_video_url(
-		video_id, user.id, video_url, video_key, db_session
+	# Update video with raw video URL and set status to PENDING
+	video = await video_service.update_raw_video(
+		video_id, user.id, raw_video_url, video_key, db_session
 	)
 
 	if not video:
@@ -167,6 +180,78 @@ async def mark_video_uploaded(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="Video not found or you don't have permission to update it",
 		)
+
+	# Trigger video processing in go-api
+	from fastapi import Request
+
+	# Build callback URL for webhook
+	# In production, use settings.API_BASE_URL or similar
+	callback_url = f"http://localhost:8000/studio/videos/{video_id}/processing-webhook"
+
+	processing_triggered = await video_processing_service.trigger_video_processing(
+		video_id=video_id,
+		raw_video_url=raw_video_url,
+		callback_url=callback_url,
+	)
+
+	if processing_triggered:
+		# Update status to PROCESSING
+		video.processing_status = VideoProcessingStatus.PROCESSING.value
+		db_session.add(video)
+		await db_session.commit()
+		await db_session.refresh(video)
+		logger.info(f"Video {video_id} processing triggered successfully")
+	else:
+		logger.warning(
+			f"Failed to trigger video processing for video {video_id}. "
+			f"Video saved but will remain in PENDING status."
+		)
+
+	return VideoResponse.model_validate(video)
+
+
+@video_routes.post("/{video_id}/processing-webhook", response_model=VideoResponse)
+async def video_processing_webhook(
+	video_id: int,
+	webhook_data: VideoProcessingWebhookReq,
+	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> VideoResponse:
+	"""
+	Webhook endpoint for go-api to notify video processing completion.
+
+	This endpoint is called by go-api when video conversion is complete.
+	No authentication required as this is an internal webhook.
+	"""
+	logger.info(f"Received processing webhook for video {video_id}: status={webhook_data.status}")
+
+	# Validate video_id matches
+	if webhook_data.video_id != video_id:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Video ID mismatch between URL and payload",
+		)
+
+	# Update video processing status
+	video = await video_service.update_processing_status(
+		video_id=video_id,
+		status=webhook_data.status,
+		db_session=db_session,
+		processed_video_url=webhook_data.processed_video_url,
+		available_qualities=webhook_data.available_qualities,
+		error=webhook_data.error,
+		duration=webhook_data.duration,
+	)
+
+	if not video:
+		raise HTTPException(
+			status_code=status.HTTP_404_NOT_FOUND,
+			detail=f"Video {video_id} not found",
+		)
+
+	logger.info(
+		f"Video {video_id} processing status updated to {webhook_data.status}. "
+		f"Processed URL: {webhook_data.processed_video_url}"
+	)
 
 	return VideoResponse.model_validate(video)
 
