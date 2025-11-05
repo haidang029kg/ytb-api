@@ -26,6 +26,15 @@ class Settings(BaseSettings):
 	DB_URL: str = Field(default="sqlite:///db.sqlite")
 	DB_URL_ASYNC: str = Field(default="sqlite+aiosqlite:///db.sqlite")
 
+	# AWS S3
+	AWS_ACCESS_KEY_ID: str = Field(default="")
+	AWS_SECRET_ACCESS_KEY: str = Field(default="")
+	AWS_REGION: str = Field(default="us-east-1")
+	S3_BUCKET_NAME: str = Field(default="")
+	S3_PRESIGNED_URL_EXPIRATION: int = Field(
+		default=3600, description="Presigned URL expiration time in seconds"
+	)
+
 	class Config:
 		# load defaults from a .env file in project root, if present
 		env_file = ".env"
