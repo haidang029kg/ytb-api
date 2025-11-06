@@ -1,0 +1,34 @@
+meta {
+  name: Update Video
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/studio/videos/{{videoId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+vars:pre-request {
+  videoId: 1
+}
+
+body:json {
+  {
+    "title": "Updated Video Title",
+    "description": "Updated description",
+    "is_published": true
+  }
+}
+
+docs {
+  Update video metadata (owner only).
+
+  Can update: title, description, thumbnail_url, duration, is_published
+  Replace {{videoId}} with actual video ID.
+}

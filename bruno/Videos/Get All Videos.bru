@@ -1,0 +1,22 @@
+meta {
+  name: Get All Videos
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/studio/videos?page=1&page_size=10
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  page_size: 10
+}
+
+docs {
+  Get all published videos (public endpoint, no auth required).
+
+  Returns paginated list of videos with processing status.
+}

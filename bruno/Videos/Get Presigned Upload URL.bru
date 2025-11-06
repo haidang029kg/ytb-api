@@ -1,0 +1,38 @@
+meta {
+  name: Get Presigned Upload URL
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/studio/videos/presigned-upload-url?file_extension=mp4&content_type=video/mp4
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+params:query {
+  file_extension: mp4
+  content_type: video/mp4
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("uploadUrl", res.body.upload_url);
+    bru.setVar("videoKey", res.body.video_key);
+  }
+}
+
+docs {
+  Get a presigned URL for uploading video to S3.
+
+  Returns:
+  - upload_url: PUT this URL with your video file
+  - video_key: S3 key for the uploaded file
+  - expires_in: URL expiration time
+
+  After uploading to S3, call "Mark Upload Complete" endpoint.
+}

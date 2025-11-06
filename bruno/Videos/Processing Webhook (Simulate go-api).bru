@@ -1,0 +1,44 @@
+meta {
+  name: Processing Webhook (Simulate go-api)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/studio/videos/{{videoId}}/processing-webhook
+  body: json
+  auth: none
+}
+
+vars:pre-request {
+  videoId: 1
+}
+
+body:json {
+  {
+    "video_id": 1,
+    "status": "completed",
+    "processed_video_url": "https://s3.amazonaws.com/bucket/processed/master.m3u8",
+    "available_qualities": {
+      "360p": "https://s3.amazonaws.com/bucket/processed/360p/playlist.m3u8",
+      "480p": "https://s3.amazonaws.com/bucket/processed/480p/playlist.m3u8",
+      "720p": "https://s3.amazonaws.com/bucket/processed/720p/playlist.m3u8",
+      "1080p": "https://s3.amazonaws.com/bucket/processed/1080p/playlist.m3u8"
+    },
+    "duration": 180
+  }
+}
+
+docs {
+  Simulate go-api webhook callback when video processing is complete.
+
+  This is what your go-api service should call after converting the video.
+
+  Status can be:
+  - "completed": Processing succeeded
+  - "failed": Processing failed
+
+  For failed status, include "error" field with error message.
+
+  Replace {{videoId}} with the video ID being processed.
+}
