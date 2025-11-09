@@ -9,11 +9,11 @@ from src.models import users as user_model
 
 
 async def get_user(
-	user_id: str | int,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    user_id: str | int,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> user_model.User | None:
-	user = await db_session.exec(
-		select(user_model.UserInDb).where(user_model.UserInDb.id == user_id)
-	)
-	user = user.first()
-	return user
+    user = await db_session.exec(
+        select(user_model.UserInDb).where(user_model.UserInDb.id == user_id)
+    )
+    user = user.first()
+    return user

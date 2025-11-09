@@ -7,7 +7,7 @@ studio_routes = APIRouter(prefix="/studio")
 
 @studio_routes.get("/info")
 async def get_studio_info():
-	pass
+    pass
 
 
 # Include video routes as a sub-router

@@ -11,31 +11,31 @@ from src.middlewares import InfoRequestMiddleWare
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-	# Startup: create engine and connect
-	logger.info("Starting up and connecting to the database...")
-	await init_db()
+    # Startup: create engine and connect
+    logger.info("Starting up and connecting to the database...")
+    await init_db()
 
-	yield
+    yield
 
-	# Shutdown: dispose of the engine
-	logger.info("Shutting down and disconnecting from the database...")
-	await async_engine.dispose()
+    # Shutdown: dispose of the engine
+    logger.info("Shutting down and disconnecting from the database...")
+    await async_engine.dispose()
 
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
-	CORSMiddleware,
-	# TODO: Change this to the frontend URL
-	allow_origins=["*"],
-	allow_methods=["*"],
-	allow_headers=["*"],
+    CORSMiddleware,
+    # TODO: Change this to the frontend URL
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 app.add_middleware(InfoRequestMiddleWare)
 
 
 @app.get("/health")
 async def health():
-	return {"status": "OK"}
+    return {"status": "OK"}
 
 
 app.include_router(auth_routes, tags=["auth"])

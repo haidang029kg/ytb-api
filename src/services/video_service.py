@@ -12,246 +12,246 @@ from src.schemas.videos import VideoCreateReq, VideoUpdateReq
 
 
 async def create_video(
-	video_data: VideoCreateReq,
-	user_id: int,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    video_data: VideoCreateReq,
+    user_id: int,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> Video:
-	"""Create a new video entry in the database."""
-	video = Video(
-		title=video_data.title,
-		description=video_data.description,
-		thumbnail_url=video_data.thumbnail_url,
-		duration=video_data.duration,
-		user_id=user_id,
-	)
+    """Create a new video entry in the database."""
+    video = Video(
+        title=video_data.title,
+        description=video_data.description,
+        thumbnail_url=video_data.thumbnail_url,
+        duration=video_data.duration,
+        user_id=user_id,
+    )
 
-	db_session.add(video)
-	await db_session.commit()
-	await db_session.refresh(video)
+    db_session.add(video)
+    await db_session.commit()
+    await db_session.refresh(video)
 
-	logger.info(f"Created video {video.id} for user {user_id}")
-	return video
+    logger.info(f"Created video {video.id} for user {user_id}")
+    return video
 
 
 async def get_video(
-	video_id: int,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    video_id: int,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> Optional[Video]:
-	"""Get a video by ID."""
-	result = await db_session.exec(select(Video).where(Video.id == video_id))
-	video = result.first()
-	return video
+    """Get a video by ID."""
+    result = await db_session.exec(select(Video).where(Video.id == video_id))
+    video = result.first()
+    return video
 
 
 async def get_video_by_user(
-	video_id: int,
-	user_id: int,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    video_id: int,
+    user_id: int,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> Optional[Video]:
-	"""Get a video by ID and user ID (ownership check)."""
-	result = await db_session.exec(
-		select(Video).where(Video.id == video_id, Video.user_id == user_id)
-	)
-	video = result.first()
-	return video
+    """Get a video by ID and user ID (ownership check)."""
+    result = await db_session.exec(
+        select(Video).where(Video.id == video_id, Video.user_id == user_id)
+    )
+    video = result.first()
+    return video
 
 
 async def get_videos_by_user(
-	user_id: int,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
-	skip: int = 0,
-	limit: int = 10,
+    user_id: int,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    skip: int = 0,
+    limit: int = 10,
 ) -> tuple[list[Video], int]:
-	"""Get all videos for a user with pagination."""
-	# Get total count
-	count_result = await db_session.exec(select(Video).where(Video.user_id == user_id))
-	total = len(count_result.all())
+    """Get all videos for a user with pagination."""
+    # Get total count
+    count_result = await db_session.exec(select(Video).where(Video.user_id == user_id))
+    total = len(count_result.all())
 
-	# Get paginated results
-	result = await db_session.exec(
-		select(Video).where(Video.user_id == user_id).offset(skip).limit(limit)
-	)
-	videos = result.all()
+    # Get paginated results
+    result = await db_session.exec(
+        select(Video).where(Video.user_id == user_id).offset(skip).limit(limit)
+    )
+    videos = result.all()
 
-	return videos, total
+    return videos, total
 
 
 async def get_all_videos(
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
-	skip: int = 0,
-	limit: int = 10,
-	published_only: bool = True,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    skip: int = 0,
+    limit: int = 10,
+    published_only: bool = True,
 ) -> tuple[list[Video], int]:
-	"""Get all videos with pagination."""
-	# Build query
-	query = select(Video)
-	if published_only:
-		query = query.where(Video.is_published == True)
+    """Get all videos with pagination."""
+    # Build query
+    query = select(Video)
+    if published_only:
+        query = query.where(Video.is_published == True)
 
-	# Get total count
-	count_result = await db_session.exec(query)
-	total = len(count_result.all())
+    # Get total count
+    count_result = await db_session.exec(query)
+    total = len(count_result.all())
 
-	# Get paginated results
-	result = await db_session.exec(query.offset(skip).limit(limit))
-	videos = result.all()
+    # Get paginated results
+    result = await db_session.exec(query.offset(skip).limit(limit))
+    videos = result.all()
 
-	return videos, total
+    return videos, total
 
 
 async def update_video(
-	video_id: int,
-	user_id: int,
-	video_data: VideoUpdateReq,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    video_id: int,
+    user_id: int,
+    video_data: VideoUpdateReq,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> Optional[Video]:
-	"""Update a video (only by owner)."""
-	# Get video and check ownership
-	video = await get_video_by_user(video_id, user_id, db_session)
-	if not video:
-		return None
+    """Update a video (only by owner)."""
+    # Get video and check ownership
+    video = await get_video_by_user(video_id, user_id, db_session)
+    if not video:
+        return None
 
-	# Update fields if provided
-	if video_data.title is not None:
-		video.title = video_data.title
-	if video_data.description is not None:
-		video.description = video_data.description
-	if video_data.thumbnail_url is not None:
-		video.thumbnail_url = video_data.thumbnail_url
-	if video_data.duration is not None:
-		video.duration = video_data.duration
-	if video_data.is_published is not None:
-		video.is_published = video_data.is_published
+    # Update fields if provided
+    if video_data.title is not None:
+        video.title = video_data.title
+    if video_data.description is not None:
+        video.description = video_data.description
+    if video_data.thumbnail_url is not None:
+        video.thumbnail_url = video_data.thumbnail_url
+    if video_data.duration is not None:
+        video.duration = video_data.duration
+    if video_data.is_published is not None:
+        video.is_published = video_data.is_published
 
-	video.updated_at = datetime.now()
+    video.updated_at = datetime.now()
 
-	db_session.add(video)
-	await db_session.commit()
-	await db_session.refresh(video)
+    db_session.add(video)
+    await db_session.commit()
+    await db_session.refresh(video)
 
-	logger.info(f"Updated video {video_id} by user {user_id}")
-	return video
+    logger.info(f"Updated video {video_id} by user {user_id}")
+    return video
 
 
 async def update_video_url(
-	video_id: int,
-	user_id: int,
-	video_url: str,
-	video_key: str,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    video_id: int,
+    user_id: int,
+    video_url: str,
+    video_key: str,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> Optional[Video]:
-	"""Update video URL and key after upload (only by owner)."""
-	video = await get_video_by_user(video_id, user_id, db_session)
-	if not video:
-		return None
+    """Update video URL and key after upload (only by owner)."""
+    video = await get_video_by_user(video_id, user_id, db_session)
+    if not video:
+        return None
 
-	video.video_url = video_url
-	video.video_key = video_key
-	video.updated_at = datetime.now()
+    video.video_url = video_url
+    video.video_key = video_key
+    video.updated_at = datetime.now()
 
-	db_session.add(video)
-	await db_session.commit()
-	await db_session.refresh(video)
+    db_session.add(video)
+    await db_session.commit()
+    await db_session.refresh(video)
 
-	logger.info(f"Updated video URL for video {video_id}")
-	return video
+    logger.info(f"Updated video URL for video {video_id}")
+    return video
 
 
 async def delete_video(
-	video_id: int,
-	user_id: int,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    video_id: int,
+    user_id: int,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> bool:
-	"""Delete a video (only by owner)."""
-	video = await get_video_by_user(video_id, user_id, db_session)
-	if not video:
-		return False
+    """Delete a video (only by owner)."""
+    video = await get_video_by_user(video_id, user_id, db_session)
+    if not video:
+        return False
 
-	await db_session.delete(video)
-	await db_session.commit()
+    await db_session.delete(video)
+    await db_session.commit()
 
-	logger.info(f"Deleted video {video_id} by user {user_id}")
-	return True
+    logger.info(f"Deleted video {video_id} by user {user_id}")
+    return True
 
 
 async def increment_views(
-	video_id: int,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    video_id: int,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> Optional[Video]:
-	"""Increment video view count."""
-	video = await get_video(video_id, db_session)
-	if not video:
-		return None
+    """Increment video view count."""
+    video = await get_video(video_id, db_session)
+    if not video:
+        return None
 
-	video.views += 1
-	db_session.add(video)
-	await db_session.commit()
-	await db_session.refresh(video)
+    video.views += 1
+    db_session.add(video)
+    await db_session.commit()
+    await db_session.refresh(video)
 
-	return video
+    return video
 
 
 async def update_raw_video(
-	video_id: int,
-	user_id: int,
-	raw_video_url: str,
-	raw_video_key: str,
-	db_session: Annotated[AsyncSession, Depends(get_async_session)],
+    video_id: int,
+    user_id: int,
+    raw_video_url: str,
+    raw_video_key: str,
+    db_session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> Optional[Video]:
-	"""Update raw video URL and set processing status to PENDING."""
-	from src.models.videos import VideoProcessingStatus
+    """Update raw video URL and set processing status to PENDING."""
+    from src.models.videos import VideoProcessingStatus
 
-	video = await get_video_by_user(video_id, user_id, db_session)
-	if not video:
-		return None
+    video = await get_video_by_user(video_id, user_id, db_session)
+    if not video:
+        return None
 
-	video.raw_video_url = raw_video_url
-	video.raw_video_key = raw_video_key
-	video.processing_status = VideoProcessingStatus.PENDING.value
-	video.updated_at = datetime.now()
+    video.raw_video_url = raw_video_url
+    video.raw_video_key = raw_video_key
+    video.processing_status = VideoProcessingStatus.PENDING.value
+    video.updated_at = datetime.now()
 
-	db_session.add(video)
-	await db_session.commit()
-	await db_session.refresh(video)
+    db_session.add(video)
+    await db_session.commit()
+    await db_session.refresh(video)
 
-	logger.info(f"Updated raw video URL for video {video_id}")
-	return video
+    logger.info(f"Updated raw video URL for video {video_id}")
+    return video
 
 
 async def update_processing_status(
-	video_id: int,
-	status: str,
-	db_session: AsyncSession,
-	processed_video_url: Optional[str] = None,
-	available_qualities: Optional[dict] = None,
-	error: Optional[str] = None,
-	duration: Optional[int] = None,
+    video_id: int,
+    status: str,
+    db_session: AsyncSession,
+    processed_video_url: Optional[str] = None,
+    available_qualities: Optional[dict] = None,
+    error: Optional[str] = None,
+    duration: Optional[int] = None,
 ) -> Optional[Video]:
-	"""Update video processing status (called by webhook)."""
-	video = await get_video(video_id, db_session)
-	if not video:
-		logger.error(f"Video {video_id} not found for processing status update")
-		return None
+    """Update video processing status (called by webhook)."""
+    video = await get_video(video_id, db_session)
+    if not video:
+        logger.error(f"Video {video_id} not found for processing status update")
+        return None
 
-	video.processing_status = status
-	video.updated_at = datetime.now()
+    video.processing_status = status
+    video.updated_at = datetime.now()
 
-	if processed_video_url:
-		video.processed_video_url = processed_video_url
-		video.video_url = processed_video_url  # Set main video_url to processed URL
+    if processed_video_url:
+        video.processed_video_url = processed_video_url
+        video.video_url = processed_video_url  # Set main video_url to processed URL
 
-	if available_qualities:
-		video.available_qualities = available_qualities
+    if available_qualities:
+        video.available_qualities = available_qualities
 
-	if error:
-		video.processing_error = error
+    if error:
+        video.processing_error = error
 
-	if duration is not None:
-		video.duration = duration
+    if duration is not None:
+        video.duration = duration
 
-	db_session.add(video)
-	await db_session.commit()
-	await db_session.refresh(video)
+    db_session.add(video)
+    await db_session.commit()
+    await db_session.refresh(video)
 
-	logger.info(f"Updated processing status for video {video_id} to {status}")
-	return video
+    logger.info(f"Updated processing status for video {video_id} to {status}")
+    return video
