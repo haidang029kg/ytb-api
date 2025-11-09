@@ -1,0 +1,26 @@
+meta {
+  name: Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/registration
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123",
+    "confirm_password": "password123"
+  }
+}
+
+docs {
+  Register a new user account.
+
+  Returns user object without password.
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Create Video
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/studio/videos
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "title": "My Test Video",
+    "description": "This is a test video created via Bruno",
+    "thumbnail_url": "https://example.com/thumbnail.jpg",
+    "duration": 120
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("videoId", res.body.id);
+  }
+}
+
+docs {
+  Create a new video entry (metadata only, no file upload yet).
+
+  Returns video object with processing_status: "pending"
+}

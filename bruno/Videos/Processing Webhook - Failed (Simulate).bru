@@ -1,0 +1,31 @@
+meta {
+  name: Processing Webhook - Failed (Simulate)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/studio/videos/{{videoId}}/processing-webhook
+  body: json
+  auth: none
+}
+
+vars:pre-request {
+  videoId: 1
+}
+
+body:json {
+  {
+    "video_id": 1,
+    "status": "failed",
+    "error": "Video codec not supported or file corrupted"
+  }
+}
+
+docs {
+  Simulate go-api webhook callback when video processing fails.
+
+  This shows how your go-api should notify about processing failures.
+
+  Replace {{videoId}} with the video ID being processed.
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Get My Videos
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/studio/videos/my-videos?page=1&page_size=10
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+params:query {
+  page: 1
+  page_size: 10
+}
+
+docs {
+  Get current user's videos (all videos, including unpublished).
+
+  Requires authentication.
+  Returns paginated list with processing status.
+}

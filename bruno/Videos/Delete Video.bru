@@ -1,0 +1,26 @@
+meta {
+  name: Delete Video
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/studio/videos/{{videoId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+vars:pre-request {
+  videoId: 1
+}
+
+docs {
+  Delete a video (owner only).
+
+  Also deletes the video file from S3 if it exists.
+  Replace {{videoId}} with actual video ID.
+}

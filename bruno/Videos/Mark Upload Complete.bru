@@ -1,0 +1,37 @@
+meta {
+  name: Mark Upload Complete
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/studio/videos/{{videoId}}/upload-complete?video_key={{videoKey}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+params:query {
+  video_key: {{videoKey}}
+}
+
+vars:pre-request {
+  videoId: 1
+  videoKey: videos/example-key.mp4
+}
+
+docs {
+  Mark raw video upload as complete and trigger HLS conversion.
+
+  This endpoint:
+  1. Saves raw video URL from S3
+  2. Sets processing_status to "pending"
+  3. Triggers go-api for HLS conversion
+  4. Sets processing_status to "processing"
+
+  Use {{videoKey}} from "Get Presigned Upload URL" response.
+  Replace {{videoId}} with the video ID from "Create Video".
+}

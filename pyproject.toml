@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aioboto3>=13.0.0",
     "aiosqlite>=0.20.0",
     "alembic>=1.14.0",
     "async-sqlmodel>=0.1.3",
@@ -30,15 +31,11 @@ lambda-deployment = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-select = ["E", "F", "W", "I"]
+lint.select = ["SIM", "FAST", "ASYNC", "I"]
 exclude = [".venv"]
-
-[tool.ruff.lint]
-select = ["SIM", "FAST", "ASYNC", "I"]
 
 [tool.ruff.format]
 quote-style = "double"
-indent-style = "tab"
 docstring-code-format = true
 
 [tool.pyright]

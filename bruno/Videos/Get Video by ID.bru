@@ -1,0 +1,22 @@
+meta {
+  name: Get Video by ID
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/studio/videos/{{videoId}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  videoId: 1
+}
+
+docs {
+  Get a specific video by ID and increment view count.
+
+  Public endpoint for published videos.
+  Replace {{videoId}} with actual video ID.
+}
