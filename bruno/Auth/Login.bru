@@ -6,13 +6,20 @@ meta {
 
 post {
   url: {{baseUrl}}/auth/token
-  body: formUrlEncoded
+  body: json
   auth: none
 }
 
+body:json {
+  {
+    "username": "vnhd1",
+    "password": "string"
+  }
+}
+
 body:form-urlencoded {
-  username: testuser
-  password: password123
+  username: vnhd1
+  password: string
 }
 
 script:post-response {
@@ -24,7 +31,7 @@ script:post-response {
 
 docs {
   Login with username and password.
-
+  
   Returns access_token and refresh_token.
   Automatically saves tokens to environment variables.
 }
